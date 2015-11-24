@@ -1,11 +1,23 @@
 #####################################################################
 # Dockerfile to build SiLK, YAF, and FlowBAT
 # Based on Ubuntu
-# Thanks to https://github.com/redjack/docker-silk for some guidance.
+#
+# The preferred method for using FlowBAT is via the Ubuntu installation
+# instructions at http://www.flowbat.com/installation.html. This image
+# is for testing only.
+#
+# Check out http://www.flowbat.com
+# Check out https://github.com/chrissanders/FlowBAT
+# Thanks to https://github.com/redjack/docker-silk
+# Thanks to https://github.com/dockerfile/nodejs
 #####################################################################
 
 FROM ubuntu:trusty
 MAINTAINER Jason Smith <jason.smith.webmail@gmail.com>
+
+EXPOSE 1800
+EXPOSE 18000
+EXPOSE 18001
 
 ENV LIBFIXBUF_VERSION 1.7.1
 ENV SILK_VERSION 3.11.0.1
@@ -34,7 +46,11 @@ RUN apt-get update \
     g++ \
     python-dev \
     make \
-    gcc
+    gcc \
+    git-core \
+    mongodb-server \
+    checkinstall \
+    wget
 
 # Download and build libfixbuf
 RUN mkdir -p /src \
@@ -71,3 +87,20 @@ RUN mkdir -p /src \
     && rm -rf /src
 
 RUN ldconfig
+
+# Download and install nodejs
+# Install Node.js
+RUN cd /tmp \
+    && wget http://nodejs.org/dist/node-latest.tar.gz \
+    && tar xvzf node-latest.tar.gz \
+    && rm -f node-latest.tar.gz \
+    && cd node-v* \
+    && ./configure \
+    && CXX="g++ -Wno-unused-local-typedefs" make \
+    && CXX="g++ -Wno-unused-local-typedefs" make install \
+    && cd /tmp \
+    && rm -rf /tmp/node-v* \
+    && npm install -g npm \
+    && printf '\n# Node.js\nexport PATH="node_modules/.bin:$PATH"' >> /root/.bashrc
+    WORKDIR /datanode
+    CMD ["bash"]
